@@ -16,6 +16,7 @@ function argParser(options, args, argsOnly = false, name = '', helpFunction = un
     const parser = new commander.Command();
     // Set parser name
     parser.name(name);
+    parser.storeOptionsAsProperties(false);
 
     if (commands) {
         commands.reduce((parserInstance, cmd) => {
@@ -63,6 +64,11 @@ function argParser(options, args, argsOnly = false, name = '', helpFunction = un
             if (!option.multiple) {
                 // Prevent default behavior for standalone options
                 parserInstance.option(flagsWithType, option.description, option.defaultValue).action(() => {});
+                if (option.negative) {
+                    // commander requires explicitly adding the negated version of boolean flags
+                    const negatedFlag = `--no-${option.name}`;
+                    parserInstance.option(negatedFlag, `negates ${option.name}`);
+                }
             } else {
                 const multiArg = (value, previous = []) => previous.concat([value]);
                 parserInstance.option(flagsWithType, option.description, multiArg, option.defaultValue).action(() => {});
@@ -93,7 +99,6 @@ function argParser(options, args, argsOnly = false, name = '', helpFunction = un
     const opts = result.opts();
 
     const unknownArgs = result.args;
-
     args.forEach((arg) => {
         const flagName = arg.slice(5);
         const option = options.find((opt) => opt.name === flagName);
